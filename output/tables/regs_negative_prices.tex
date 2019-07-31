@@ -1,0 +1,15 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\toprule
+                    &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         &\multicolumn{1}{c}{(3)}         &\multicolumn{1}{c}{(4)}         \\
+\midrule
+1603 Grant          &      -2.893\sym{**} &      -2.542         &      -3.716\sym{***}&      -2.184\sym{**} \\
+                    &     (1.238)         &     (1.769)         &     (1.033)         &     (1.099)         \\
+\midrule
+Estimator           &          IV         &          IV         &       Match         &       Match         \\
+Negative Price Adjustment&          No         &         Yes         &          No         &         Yes         \\
+N                   &        8752         &        6336         &       10106         &        7054         \\
+\bottomrule
+\end{tabular}
+}

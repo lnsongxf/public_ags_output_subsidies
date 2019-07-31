@@ -1,0 +1,109 @@
+----------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/todd/Documents/GitHub/ags_capital_vs_output/output/logs/proposal_analysis.txt
+  log type:  text
+ opened on:   9 Jul 2019, 13:10:20
+
+. ********************************************************************************
+. 
+. set scheme s1color
+
+. 
+. ********************************************************************************
+. * PREP DATA
+. ********************************************************************************
+. use "$repodir/generated_data/eia860_proposed_and_operating.dta",clear
+
+. keep if has_wind == 1 // keep only wind plants
+(18,386 observations deleted)
+
+. drop if eia860_proposal_year==. // plants that show up in the 860 operating data without ever showing up
+>  in the 860 proposed data
+(425 observations deleted)
+
+. drop if eia860_proposal_year>first_yr_oper & eia860_proposal_year!=. // drop expansions to existing faci
+> lities (these data are at plant rather than generator level)
+(93 observations deleted)
+
+. drop if proposed_year<eia860_proposal_year // data issue that only affects four plants from this subsamp
+> le
+(270 observations deleted)
+
+. bys facilityid (eia860_proposal_year): keep if _n==1 // keep earliest proposal only
+(590 observations deleted)
+
+. 
+. ********************************************************************************
+. * SHARE EVER COMPLETED
+. ********************************************************************************
+. graph drop _all
+
+. * share completed
+. preserve
+
+. drop if last_eia860_proposal_year==2016 & was_built==0
+(171 observations deleted)
+
+. collapse was_built, by(proposed_year)
+
+. lab var was_built "Share of Plants Ever Completed"
+
+. lab var proposed_year "Initial Expected Completion Year"
+
+. keep if inrange(proposed_year,2004,2014)
+(9 observations deleted)
+
+. twoway scatter was_built proposed_year, name(ever) ///
+>         xline(2009) ysc(r(0.7 1)) ylab(0(0.2)1) ///
+>         note("Initial expected completion year is the year the generator was first scheduled to start op
+> eration." ///
+>         "Completion is determined based on whether each plant entered into the EIA-860 operable data." /
+> //
+>         "Plots are based on the subset of plants that last appeared in the EIA-860 proposed data prior t
+> o 2016.")
+
+. graph export "$outdir/figures/proposal_data_ever_completed.png", replace
+(file /Users/todd/Documents/GitHub/ags_capital_vs_output/output/figures/proposal_data_ever_completed.png w
+> ritten in PNG format)
+
+. restore
+
+. 
+. ********************************************************************************
+. * SHARE COMPLETED NO LATER THAN ONE YEAR AFTER INTITIAL EXPECTED YEAR ONLINE
+. ********************************************************************************
+. * share completed
+. preserve
+
+. gen on_time = first_yr_oper-proposed_year<=1
+
+. collapse on_time, by(proposed_year)
+
+. lab var on_time "Share of Plants Completed by Expected Year+1"
+
+. lab var proposed_year "Initial Expected Completion Year"
+
+. keep if inrange(proposed_year,2004,2014)
+(12 observations deleted)
+
+. twoway scatter on_time proposed_year, name(ontime) ///
+>         xline(2009) ysc(r(0 1)) ylab(0(0.2)1) ///
+>         note("Initial expected completion year is the year the generator was first scheduled to start op
+> eration." ///
+>         "Completion is determined based on whether each plant entered into the EIA-860 operable data." /
+> //
+>         "Plots are based on the subset of plants that last appeared in the EIA-860 proposed data prior t
+> o 2016.")
+
+. graph export "$outdir/figures/proposal_data_completed_on_time.png", replace
+(file /Users/todd/Documents/GitHub/ags_capital_vs_output/output/figures/proposal_data_completed_on_time.pn
+> g written in PNG format)
+
+. restore
+
+. 
+. ********************************************************************************
+. tempsetup
+/Users/todd/Documents/GitHub/ags_capital_vs_output/temp
+
+. capture log close

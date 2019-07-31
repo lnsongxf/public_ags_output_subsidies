@@ -1,0 +1,34 @@
+----------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/todd/Documents/GitHub/ags_capital_vs_output/output/logs/draft_stats.txt
+  log type:  text
+ opened on:   9 Jul 2019, 13:11:32
+
+. ********************************************************************************
+. qui{ 
+
+. 
+. forval i = 1/`ns' {
+  2.         local td = stat_description[`i']
+  3.         local tv = stat_value[`i']
+  4.         di "`td'  =   `tv'"
+  5. 
+.         file open myfile using "$repodir/output/estimates/stat_`td'.tex", write text replace 
+  6.         file write myfile "`tv'"
+  7.         file close myfile
+  8. }
+rd_estimate  =   2.89
+match_estimate  =   3.72
+rd_estimate_pct  =   10
+match_estimate_pct  =   12
+avg_cf  =   32.55
+avg_cf_1603  =   30.32
+pe_linear  =   -1.04
+N_total_sample  =   465
+
+. 
+. ********************************************************************************
+. tempsetup
+/Users/todd/Documents/GitHub/ags_capital_vs_output/temp
+
+. capture log close

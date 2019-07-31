@@ -1,0 +1,369 @@
+----------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/todd/Documents/GitHub/ags_capital_vs_output/output/logs/long_run_regs.txt
+  log type:  text
+ opened on:   9 Jul 2019, 13:11:07
+
+. ********************************************************************************
+. 
+. /* SETUP DATA  */
+. 
+. use $repodir/generated_data/panel_reg_data, clear
+
+. 
+. keep if year > 2012 // restrict so wind vars etc are same period 
+(46,744 observations deleted)
+
+. collapse (mean) ptnl_* wind* reg_dummy capacity_factor , by(facilityid)
+
+. merge 1:1 facilityid using $repodir/generated_data/static_reg_data, nogen keep(match)
+(label pcurve_match already defined)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               870  
+    -----------------------------------------
+
+. keep if insample
+(303 observations deleted)
+
+. keep if insample_covars
+(55 observations deleted)
+
+. save crossdata, replace 
+(note: file crossdata.dta not found)
+file crossdata.dta saved
+
+. 
+. use crossdata, clear
+
+. 
+. *DEFINE VARIABLES 
+. 
+. gen awea_pct = awea_geo_MW / first_nameplate_capacity
+
+. gen footprintMW = awea_area / awea_geo_MW 
+
+. gen footprintTurb = awea_area / awea_geo_turbines
+
+. 
+. lab var footprintMW "Footprint (SqMile/MW)"
+
+. lab var footprintTurb "Footprint (SqMile/Turbine)"
+
+. 
+. *gen flag_1603_2009 = cond(firstyear == 2009 & flag_1603==1,1,0)
+. gen flag_1603_2010 = cond(firstyear == 2010 & flag_1603==1,1,0)
+
+. gen flag_1603_2011 = cond(firstyear == 2011 & flag_1603==1,1,0)
+
+. gen flag_1603_2012 = cond(firstyear == 2012 & flag_1603==1,1,0)
+
+. 
+. lab var flag_1603_2010 "1603 - Enter 2010"
+
+. lab var flag_1603_2011 "1603 - Enter 2011"
+
+. lab var flag_1603_2012 "1603 - Enter 2012"
+
+. 
+. gen log_name = log(first_name)
+
+. gen turbinesize = powercurve_max_cap/1000
+
+. 
+. lab var turbinesize "Turbine Size (MW)"
+
+. 
+. save regdat, replace 
+(note: file regdat.dta not found)
+file regdat.dta saved
+
+. 
+. 
+. use regdat, clear
+
+. *RESTRICT TO SAMPLE WE ACTUALLY USE 
+. keep if firstyear > 2004
+(47 observations deleted)
+
+. xi i.state i.iso_rto_code i.entnum i.firstyear, prefix(_D) noomit
+
+. * ANCHOR ESTIMATES TO 2005 
+. drop _Dfirstyear_2005
+
+. 
+. *FOR FOOTPRINT VARIABLES DROP OBSERVATIONS WE DON'T OBSERVE AREA WELL ON
+.         * - SINGLE TURBINES 
+.         * - PLANTS THAT GREW A LOT OVER TIME (AWEA DATABASE CONTAINS MANY MORE TURBINES THAN WE HAVE IN 
+> NAMEPLATE)
+. foreach v of varlist footprint* {
+  2.         replace `v' = . if awea_area == 0
+  3.         sum `v', detail
+  4.         *di `r(p99)'
+.         replace `v' = . if `v' > `r(p99)' // winsorize some plants with obviously erronous areas
+  5.         replace `v' = . if awea_pct > 2 // drop plants were AWEA contains more than 2x initial capaci
+> ty
+  6. }
+(22 real changes made, 22 to missing)
+
+                    Footprint (SqMile/MW)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     .0001746       .0000218
+ 5%     .0047288       .0000227
+10%     .0259504       .0000497       Obs                 443
+25%     .0770824       .0001601       Sum of Wgt.         443
+
+50%      .167873                      Mean           1.231503
+                        Largest       Std. Dev.      21.32417
+75%     .2768457       1.475594
+90%     .4362856       1.475594       Variance       454.7201
+95%     .5351679       1.475594       Skewness       20.97249
+99%     1.475594       449.0136       Kurtosis       440.8978
+(1 real change made, 1 to missing)
+(31 real changes made, 31 to missing)
+(22 real changes made, 22 to missing)
+
+                 Footprint (SqMile/Turbine)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     .0003666       .0000272
+ 5%     .0073655       .0000476
+10%     .0425694       .0000621       Obs                 443
+25%     .1539739       .0003361       Sum of Wgt.         443
+
+50%     .2988142                      Mean           1.901702
+                        Largest       Std. Dev.      31.98371
+75%     .5210686       1.844493
+90%     .7517501       1.844493       Variance       1022.958
+95%     1.028443        2.04528       Skewness       20.97239
+99%     1.844493       673.5204       Kurtosis       440.8949
+(2 real changes made, 2 to missing)
+(31 real changes made, 31 to missing)
+
+. 
+. save tempdat, replace
+(note: file tempdat.dta not found)
+file tempdat.dta saved
+
+. 
+. capture program drop estimateregs
+
+. program define estimateregs
+  1.         eststo: reg $yvar _Dfirst* flag_1603*, robust
+  2.                         estadd local yvar "$ylab", replace
+  3.                         estadd local state "N", replace
+  4.                         estadd local covars "N", replace
+  5.         eststo: reg $yvar _Dfirst* flag_1603* $xvar, robust
+  6.                         estadd local yvar "$ylab", replace
+  7.                         estadd local state "N", replace
+  8.                         estadd local covars "Y", replace
+  9.         eststo: reg $yvar _Dfirst* flag_1603* $xvar _Dst* , robust
+ 10.                         estadd local yvar "$ylab", replace
+ 11.                         estadd local state "Y", replace
+ 12.                         estadd local covars "Y", replace
+ 13. end
+
+. 
+. 
+. eststo clear
+
+. 
+. global xvar log_name ipp_dummy reg_dummy design_windspeed_eia 
+
+. 
+. global yvar turbinesize 
+
+. global ylab "Turbine Size"
+
+. qui {
+
+. 
+. global yvar footprintTurb 
+
+. global ylab "Footprint"
+
+. 
+. qui {
+
+. 
+. 
+. esttab, keep(_Dfi* flag_* )     ///
+>         s(yvar covars state r2 N, ///
+>                 label("Outcome" "Controls" "State FE" "R-sq." "N")) ///
+>         se noconstant label star(* 0.10 ** 0.05 *** 0.01) nomtitles 
+
+----------------------------------------------------------------------------------------------------------
+> ----------
+                              (1)             (2)             (3)             (4)             (5)         
+>     (6)   
+----------------------------------------------------------------------------------------------------------
+> ----------
+firstyear==2006           -0.0907         -0.0103         -0.0342          0.0114           0.106*        
+>   0.147** 
+                         (0.0930)         (0.102)         (0.108)        (0.0630)        (0.0573)        (
+> 0.0612)   
+
+firstyear==2007             0.363***        0.385***        0.397***        0.143**         0.152***      
+>   0.143** 
+                         (0.0973)        (0.1000)         (0.101)        (0.0554)        (0.0539)        (
+> 0.0588)   
+
+firstyear==2008             0.318***        0.346***        0.330***        0.111**         0.131**       
+>   0.125** 
+                         (0.0894)        (0.0919)        (0.0950)        (0.0524)        (0.0544)        (
+> 0.0614)   
+
+firstyear==2009             0.360***        0.374***        0.357***       0.0760          0.0854         
+>   0.113*  
+                          (0.121)         (0.120)         (0.126)        (0.0481)        (0.0520)        (
+> 0.0661)   
+
+firstyear==2010             0.237           0.267           0.335*        -0.0281          0.0143        -
+> 0.00441   
+                          (0.176)         (0.181)         (0.201)        (0.0716)        (0.0612)        (
+> 0.0885)   
+
+firstyear==2011             0.399***        0.434***        0.419***        0.207***        0.195***      
+>   0.176** 
+                          (0.115)         (0.114)         (0.111)        (0.0730)        (0.0637)        (
+> 0.0726)   
+
+firstyear==2012             0.330***        0.381***        0.404***        0.243***        0.251***      
+>   0.257***
+                         (0.0955)        (0.0963)         (0.100)        (0.0605)        (0.0585)        (
+> 0.0586)   
+
+1603 Grant                -0.0704         -0.0547         -0.0367           0.108*         0.0875         
+>  0.0746   
+                          (0.110)         (0.107)         (0.114)        (0.0584)        (0.0571)        (
+> 0.0703)   
+
+1603 - Enter 2010           0.109           0.126          0.0183           0.131           0.121         
+>   0.171   
+                          (0.203)         (0.207)         (0.225)         (0.106)        (0.0967)         
+> (0.114)   
+
+1603 - Enter 2011           0.121           0.131          0.0629          -0.311***       -0.202**       
+>  -0.107   
+                          (0.162)         (0.154)         (0.154)        (0.0932)        (0.0821)        (
+> 0.0957)   
+
+1603 - Enter 2012           0.324**         0.300**         0.238*         -0.233***       -0.174**       
+>  -0.116   
+                          (0.140)         (0.138)         (0.144)        (0.0854)        (0.0815)        (
+> 0.0852)   
+----------------------------------------------------------------------------------------------------------
+> ----------
+Outcome              Turbine Size    Turbine Size    Turbine Size       Footprint       Footprint       Fo
+> otprint   
+Controls                        N               Y               Y               N               Y         
+>       Y   
+State FE                        N               N               Y               N               N         
+>       Y   
+R-sq.                       0.134           0.161           0.254          0.0724           0.240         
+>   0.403   
+N                             465             465             465             410             410         
+>     410   
+----------------------------------------------------------------------------------------------------------
+> ----------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+
+. 
+. *EXPORT TABLE
+. esttab using "$outdir/tables/input_trend_regressions.tex" , ///
+>         se noconstant label star(* 0.10 ** 0.05 *** 0.01) replace  ///
+>         keep(flag_*) nonotes compress booktabs b(a2) ///
+>         s(yvar covars state r2 N, ///
+>                 label("Outcome" "Controls" "State FE" "R-sq." "N"))  nomtitles 
+(output written to /Users/todd/Documents/GitHub/ags_capital_vs_output/output/tables/input_trend_regression
+> s.tex)
+
+. 
+. *EXPORT TABLE FOR PRESENTATION
+. esttab est1 est2 est4 est5 using "$outdir/tables/input_trend_regressions_prez.tex" , ///
+>         se noconstant label star(* 0.10 ** 0.05 *** 0.01) replace  ///
+>         keep(flag_*) nonotes compress booktabs b(a2) ///
+>         mtitles("Turbine Size" "Turbine Size" "Footprint" "Footprint") nonumbers ///
+>         s(covars state r2 N, ///
+>                 label("Controls" "State FE" "R-sq." "N"))
+(output written to /Users/todd/Documents/GitHub/ags_capital_vs_output/output/tables/input_trend_regression
+> s_prez.tex)
+
+. 
+.                 
+. *CREATE GRAPHS 
+. use tempdat, clear
+
+. local varname turbinesize
+
+. 
+. collapse (mean) y = `varname' (semean) se_y = `varname', by(firstyear flag_1603)
+
+. 
+. gen yu = y + 1.96*se_y
+
+. gen yl = y - 1.96*se_y  
+
+. 
+. replace firstyear = firstyear + .2 if flag_1603
+(4 real changes made)
+
+. 
+. twoway (scatter y firstyear if flag_1603 == 0, msymbol(S) msize(medium)) ///
+>        (rcap yu yl firstyear if flag_1603 == 0) ///
+>            (scatter y firstyear if flag_1603 == 1, msymbol(D) msize(medium)) ///
+>        (rcap yu yl firstyear if flag_1603 == 1, ///
+>            legend(order(1 "PTC" 3 "1603")) xlab(2005(1)2012) ///
+>            saving(turbsize, replace)  xtitle("")  ytitle("Turbine Size (MW)"))
+(note: file turbsize.gph not found)
+(file turbsize.gph saved)
+
+.            
+. use tempdat, clear         
+
+. *local varname footprintMW
+. local varname footprintTurb 
+
+. 
+. collapse (mean) y = `varname' (semean) se_y = `varname', by(firstyear flag_1603)
+
+. 
+. gen yu = y + 1.96*se_y
+
+. gen yl = y - 1.96*se_y  
+
+. 
+. replace firstyear = firstyear + .2 if flag_1603
+(4 real changes made)
+
+. 
+. twoway (scatter y firstyear if flag_1603 == 0, msymbol(S) msize(medium)) ///
+>        (rcap yu yl firstyear if flag_1603 == 0) ///
+>            (scatter y firstyear if flag_1603 == 1, msymbol(D) msize(medium)) ///
+>        (rcap yu yl firstyear if flag_1603 == 1, ///
+>            legend(order(1 "PTC" 3 "1603")) xlab(2005(1)2012) ///
+>            saving(footprint, replace) xtitle("") ytitle("Sq.Mile / Turbine"))
+(note: file footprint.gph not found)
+(file footprint.gph saved)
+
+.         
+. grc1leg  turbsize.gph footprint.gph , /// 
+>         legendfrom(turbsize.gph)  rows(2) imargin(zero)
+
+.          
+. graph export "$repodir/output/figures/input_trends.png", replace
+(file /Users/todd/Documents/GitHub/ags_capital_vs_output/output/figures/input_trends.png written in PNG fo
+> rmat)
+
+. 
+. ********************************************************************************
+. cap graph close
+
+. tempsetup
+/Users/todd/Documents/GitHub/ags_capital_vs_output/temp
+
+. capture log close

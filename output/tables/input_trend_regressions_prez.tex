@@ -1,0 +1,25 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\toprule
+                &\multicolumn{1}{c}{Turbine Size}&\multicolumn{1}{c}{Turbine Size}&\multicolumn{1}{c}{Footprint}&\multicolumn{1}{c}{Footprint}\\
+\midrule
+1603 Grant      &   -0.070         &   -0.055         &     0.11\sym{*}  &    0.088         \\
+                &   (0.11)         &   (0.11)         &  (0.058)         &  (0.057)         \\
+\addlinespace
+1603 - Enter 2010&     0.11         &     0.13         &     0.13         &     0.12         \\
+                &   (0.20)         &   (0.21)         &   (0.11)         &  (0.097)         \\
+\addlinespace
+1603 - Enter 2011&     0.12         &     0.13         &    -0.31\sym{***}&    -0.20\sym{**} \\
+                &   (0.16)         &   (0.15)         &  (0.093)         &  (0.082)         \\
+\addlinespace
+1603 - Enter 2012&     0.32\sym{**} &     0.30\sym{**} &    -0.23\sym{***}&    -0.17\sym{**} \\
+                &   (0.14)         &   (0.14)         &  (0.085)         &  (0.082)         \\
+\midrule
+Controls        &        N         &        Y         &        N         &        Y         \\
+State FE        &        N         &        N         &        N         &        N         \\
+R-sq.           &     0.13         &     0.16         &    0.072         &     0.24         \\
+N               &      465         &      465         &      410         &      410         \\
+\bottomrule
+\end{tabular}
+}

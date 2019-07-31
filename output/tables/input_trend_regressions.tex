@@ -1,0 +1,26 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{6}{c}}
+\toprule
+                &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         &\multicolumn{1}{c}{(3)}         &\multicolumn{1}{c}{(4)}         &\multicolumn{1}{c}{(5)}         &\multicolumn{1}{c}{(6)}         \\
+\midrule
+1603 Grant      &   -0.070         &   -0.055         &   -0.037         &     0.11\sym{*}  &    0.088         &    0.075         \\
+                &   (0.11)         &   (0.11)         &   (0.11)         &  (0.058)         &  (0.057)         &  (0.070)         \\
+\addlinespace
+1603 - Enter 2010&     0.11         &     0.13         &    0.018         &     0.13         &     0.12         &     0.17         \\
+                &   (0.20)         &   (0.21)         &   (0.22)         &   (0.11)         &  (0.097)         &   (0.11)         \\
+\addlinespace
+1603 - Enter 2011&     0.12         &     0.13         &    0.063         &    -0.31\sym{***}&    -0.20\sym{**} &    -0.11         \\
+                &   (0.16)         &   (0.15)         &   (0.15)         &  (0.093)         &  (0.082)         &  (0.096)         \\
+\addlinespace
+1603 - Enter 2012&     0.32\sym{**} &     0.30\sym{**} &     0.24\sym{*}  &    -0.23\sym{***}&    -0.17\sym{**} &    -0.12         \\
+                &   (0.14)         &   (0.14)         &   (0.14)         &  (0.085)         &  (0.082)         &  (0.085)         \\
+\midrule
+Outcome         &Turbine Size         &Turbine Size         &Turbine Size         &Footprint         &Footprint         &Footprint         \\
+Controls        &        N         &        Y         &        Y         &        N         &        Y         &        Y         \\
+State FE        &        N         &        N         &        Y         &        N         &        N         &        Y         \\
+R-sq.           &     0.13         &     0.16         &     0.25         &    0.072         &     0.24         &     0.40         \\
+N               &      465         &      465         &      465         &      410         &      410         &      410         \\
+\bottomrule
+\end{tabular}
+}
